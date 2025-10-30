@@ -1,83 +1,76 @@
 package ca.gbc.midterm_iqbal_qureshi;
 
-import java.util.*;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.*;
+import java.util.ArrayList;
 
-public class Main {
-    private static List<String> table = new ArrayList<>();
-    private static Scanner scanner = new Scanner(System.in);
-    private static int currentNumber = -1;
+public class MainActivity extends AppCompatActivity {
+    EditText numberInput;
+    Button generateBtn, historyBtn;
+    ListView listView;
+    ArrayList<String> tableList;
+    ArrayAdapter<String> adapter;
+    int currentNumber = -1;
 
-    public static void main(String[] args) {
-        System.out.println("=== Multiplication Table Application ===");
-        while (true) {
-            System.out.println("\n1. Generate Table");
-            System.out.println("2. View History");
-            System.out.println("3. Exit");
-            System.out.print("Enter choice: ");
-            int choice = getInt();
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-            switch (choice) {
-                case 1 -> generateTable();
-                case 2 -> showHistory();
-                case 3 -> {
-                    System.out.println("Goodbye!");
-                    return;
-                }
-                default -> System.out.println("Invalid choice!");
-            }
-        }
+        numberInput = findViewById(R.id.numberInput);
+        generateBtn = findViewById(R.id.generateBtn);
+        historyBtn = findViewById(R.id.historyBtn);
+        listView = findViewById(R.id.listView);
+
+        tableList = new ArrayList<>();
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, tableList);
+        listView.setAdapter(adapter);
+
+        generateBtn.setOnClickListener(v -> generateTable());
+        historyBtn.setOnClickListener(v -> openHistory());
+        listView.setOnItemClickListener((parent, view, position, id) -> confirmDelete(position));
     }
 
-    private static void generateTable() {
-        System.out.print("Enter a number: ");
-        currentNumber = getInt();
+    private void generateTable() {
+        String input = numberInput.getText().toString().trim();
+        if (input.isEmpty()) {
+            Toast.makeText(this, "Please enter a number", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        table.clear();
+        currentNumber = Integer.parseInt(input);
+        tableList.clear();
+
         for (int i = 1; i <= 10; i++) {
-            table.add(currentNumber + " × " + i + " = " + (currentNumber * i));
+            tableList.add(currentNumber + " × " + i + " = " + (currentNumber * i));
         }
+        adapter.notifyDataSetChanged();
 
-        if (!DataStore.history.contains(currentNumber))
-            DataStore.history.add(currentNumber);
-
-        printTable();
-
-        while (true) {
-            System.out.print("\nEnter row number to delete (or 0 to finish): ");
-            int index = getInt();
-            if (index == 0) break;
-            if (index > 0 && index <= table.size()) {
-                String removed = table.remove(index - 1);
-                System.out.println("Deleted: " + removed);
-                printTable();
-            } else {
-                System.out.println("Invalid index!");
-            }
+        if (!DataStore.historyNumbers.contains(currentNumber)) {
+            DataStore.historyNumbers.add(currentNumber);
         }
     }
 
-    private static void printTable() {
-        System.out.println("\nMultiplication Table for " + currentNumber + ":");
-        for (int i = 0; i < table.size(); i++) {
-            System.out.println((i + 1) + ". " + table.get(i));
-        }
+    private void confirmDelete(int position) {
+        String item = tableList.get(position);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Row")
+                .setMessage("Delete " + item + "?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    tableList.remove(position);
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(this, "Deleted: " + item, Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("No", null)
+                .show();
     }
 
-    private static void showHistory() {
-        if (DataStore.history.isEmpty()) {
-            System.out.println("No history yet!");
-        } else {
-            System.out.println("Tables generated for: " + DataStore.history);
-        }
-    }
-
-    private static int getInt() {
-        while (true) {
-            try {
-                return Integer.parseInt(scanner.nextLine().trim());
-            } catch (Exception e) {
-                System.out.print("Please enter a valid number: ");
-            }
-        }
+    private void openHistory() {
+        Intent intent = new Intent(this, HistoryActivity.class);
+        startActivity(intent);
     }
 }
